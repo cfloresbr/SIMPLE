@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="cl.simple.AlertApiTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-18T09:13:45.465Z" hostname="TOÑO" time="8.784">
+  <properties/>
+  <testcase name="applicationStarts()" classname="cl.simple.AlertApiTest" time="0.532"/>
+  <system-out><![CDATA[06:13:45.755 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [cl.simple.AlertApiTest]: AlertApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+06:13:46.016 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration cl.simple.Application for test class cl.simple.AlertApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.1)
+
+2026-10-18T06:13:46.777-03:00  INFO 19180 --- [    Test worker] cl.simple.AlertApiTest                   : Starting AlertApiTest using Java 21.0.12 with PID 19180 (started by cflor in C:\Users\cflor\Desktop\kotlin\SIMPLE\backend)
+2026-10-18T06:13:46.779-03:00  INFO 19180 --- [    Test worker] cl.simple.AlertApiTest                   : No active profile set, falling back to 1 default profile: "default"
+2026-10-18T06:13:48.588-03:00  INFO 19180 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-18T06:13:48.717-03:00  INFO 19180 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 107 ms. Found 3 JPA repository interfaces.
+2026-10-18T06:13:49.564-03:00  INFO 19180 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-18T06:13:49.692-03:00  INFO 19180 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.4.Final
+2026-10-18T06:13:49.761-03:00  INFO 19180 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-18T06:13:50.187-03:00  INFO 19180 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-18T06:13:50.231-03:00  INFO 19180 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-18T06:13:50.449-03:00  INFO 19180 --- [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@36a1fd20
+2026-10-18T06:13:50.451-03:00  INFO 19180 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-18T06:13:50.628-03:00  INFO 19180 --- [    Test worker] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.46
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-10-18T06:13:51.677-03:00  INFO 19180 --- [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-18T06:13:51.793-03:00  INFO 19180 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-18T06:13:52.707-03:00  WARN 19180 --- [    Test worker] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 5edb886d-ff34-4aa6-b8a7-111ef2df0ff9
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-10-18T06:13:52.745-03:00  INFO 19180 --- [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-10-18T06:13:53.696-03:00  INFO 19180 --- [    Test worker] cl.simple.AlertApiTest                   : Started AlertApiTest in 7.385 seconds (process running for 9.599)
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\cflor\.gradle\caches\modules-2\files-2.1\net.bytebuddy\byte-buddy-agent\1.15.11\a38b16385e867f59a641330f0362ebe742788ed8\byte-buddy-agent-1.15.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>
