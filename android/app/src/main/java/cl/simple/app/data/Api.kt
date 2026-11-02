@@ -25,6 +25,16 @@ data class AlertHistoryDto(
     val changedAt: String
 )
 
+data class ReportSummaryDto(
+    val totalAlerts: Int,
+    val pending: Int,
+    val validated: Int,
+    val active: Int,
+    val rejected: Int,
+    val resolved: Int,
+    val expired: Int
+)
+
 interface SimpleApi {
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
@@ -76,7 +86,7 @@ interface SimpleApi {
     ): List<AlertHistoryDto>
 
     @GET("api/reports/summary")
-    suspend fun summary(@Header("Authorization") token: String): Map<String, Any>
+    suspend fun summary(@Header("Authorization") token: String): ReportSummaryDto
 }
 
 object ApiClient {

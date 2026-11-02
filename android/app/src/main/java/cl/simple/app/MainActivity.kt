@@ -21,6 +21,7 @@ class SimpleViewModel : ViewModel() {
     var user by mutableStateOf<UserDto?>(null)
     var alerts by mutableStateOf<List<AlertDto>>(emptyList())
     var history by mutableStateOf<List<AlertHistoryDto>>(emptyList())
+    var summary by mutableStateOf<ReportSummaryDto?>(null)
     var error by mutableStateOf<String?>(null)
     var loading by mutableStateOf(false)
 
@@ -33,7 +34,7 @@ class SimpleViewModel : ViewModel() {
         }.onSuccess {
             token = it.token
             user = it.user
-            loadAlerts()
+            refreshDashboard()
         }.onFailure {
             error = it.message ?: "No fue posible iniciar sesión"
         }
@@ -53,7 +54,7 @@ class SimpleViewModel : ViewModel() {
             }.onSuccess {
                 token = it.token
                 user = it.user
-                loadAlerts()
+                refreshDashboard()
             }.onFailure {
                 error = it.message ?: "No fue posible registrar la cuenta"
             }
@@ -74,6 +75,28 @@ class SimpleViewModel : ViewModel() {
         }
     }
 
+    fun loadSummary() = viewModelScope.launch {
+        val currentToken = token ?: return@launch
+        val role = user?.role?.uppercase()
+        if (role != "INSTITUTION" && role != "ADMIN") {
+            summary = null
+            return@launch
+        }
+
+        runCatching {
+            ApiClient.api.summary("Bearer $currentToken")
+        }.onSuccess {
+            summary = it
+        }.onFailure {
+            error = it.message ?: "No fue posible cargar el resumen institucional"
+        }
+    }
+
+    fun refreshDashboard() {
+        loadAlerts()
+        loadSummary()
+    }
+
     fun createAlert(type: String, level: String, message: String) =
         viewModelScope.launch {
             val currentToken = token ?: return@launch
@@ -87,7 +110,7 @@ class SimpleViewModel : ViewModel() {
                     AlertRequest(type, level, message, null, null)
                 )
             }.onSuccess {
-                loadAlerts()
+                refreshDashboard()
             }.onFailure {
                 error = it.message ?: "No fue posible crear el reporte"
             }
@@ -115,7 +138,7 @@ class SimpleViewModel : ViewModel() {
                 AlertActionRequest()
             )
         }.onSuccess {
-            loadAlerts()
+            refreshDashboard()
         }.onFailure {
             error = it.message ?: "No fue posible actualizar la alerta"
         }
@@ -165,6 +188,7 @@ class SimpleViewModel : ViewModel() {
         user = null
         alerts = emptyList()
         history = emptyList()
+        summary = null
         error = null
     }
 }
@@ -220,7 +244,7 @@ fun HomeScreen(vm: SimpleViewModel) {
             TopAppBar(
                 title = { Text("SIMPLE") },
                 actions = {
-                    TextButton(onClick = { vm.loadAlerts() }) {
+                    TextButton(onClick = vm::refreshDashboard) {
                         Text("Actualizar")
                     }
                     TextButton(onClick = vm::logout) {
@@ -280,6 +304,25 @@ fun HomeScreen(vm: SimpleViewModel) {
                         text = errorMessage,
                         color = MaterialTheme.colorScheme.error
                     )
+                }
+            }
+
+            if (canManageAlerts) {
+                vm.summary?.let { report ->
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text("Resumen institucional", style = MaterialTheme.typography.titleMedium)
+                                Text("Total de alertas: ${report.totalAlerts}")
+                                Text("Pendientes: ${report.pending} · Validadas: ${report.validated}")
+                                Text("Activas: ${report.active} · Rechazadas: ${report.rejected}")
+                                Text("Resueltas: ${report.resolved} · Vencidas: ${report.expired}")
+                            }
+                        }
+                    }
                 }
             }
 

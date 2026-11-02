@@ -1,13 +1,13 @@
 package cl.simple.security
 
 import cl.simple.repo.UserRepository
+import jakarta.servlet.DispatcherType
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-import org.springframework.stereotype.Component
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -20,7 +20,8 @@ class SecurityConfig {
     @Bean
     fun filterChain(
         http: HttpSecurity,
-        jwtFilter: JwtFilter
+        jwt: JwtService,
+        users: UserRepository
     ): SecurityFilterChain =
         http
             .csrf { it.disable() }
@@ -41,18 +42,18 @@ class SecurityConfig {
                 }
             }
             .authorizeHttpRequests {
-                it.requestMatchers("/api/auth/**").permitAll()
+                it.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                    .requestMatchers("/api/auth/**").permitAll()
                     .anyRequest().authenticated()
             }
             .addFilterBefore(
-                jwtFilter,
+                JwtFilter(jwt, users),
                 UsernamePasswordAuthenticationFilter::class.java
             )
             .build()
 
 }
 
-@Component
 class JwtFilter(private val jwt: JwtService, private val users: UserRepository): OncePerRequestFilter() {
     override fun doFilterInternal(req: HttpServletRequest, res: HttpServletResponse, chain: FilterChain) {
         val header = req.getHeader("Authorization")
