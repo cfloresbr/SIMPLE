@@ -2,7 +2,7 @@
 
 ## Estado del documento
 
-Plan de validación en ejecución en la rama local `etapa2`, creada desde `10e25e1` (`final etapa 1`). La rama todavía no se ha publicado. Las fases 2.1 y 2.2 tienen pruebas automatizadas aprobadas; la fase 2.3 está parcialmente validada mediante consulta agregada de MySQL. El alcance se basa en el plan de pruebas del Informe Maestro SIMPLE con fecha 20 de octubre de 2026.
+Plan de validación de la rama `etapa2`, creada desde `10e25e1` (`final etapa 1`) y publicada en GitHub. Las fases 2.1, 2.2 y 2.3 están validadas; la fase 2.4 fue revisada manualmente para `USER` e `INSTITUTION`. El alcance se basa en el plan de pruebas del Informe Maestro SIMPLE con fecha 20 de octubre de 2026.
 
 ## Objetivo
 
@@ -63,7 +63,7 @@ Estas funcionalidades requieren etapas y criterios propios; su existencia no deb
 - Etapa 1 publicada: commit `10e25e1` (`final etapa 1`) en `origin/etapa1`.
 - La rama `etapa2` parte de ese commit.
 - El árbol de trabajo estaba limpio al crear la rama.
-- El borrador no está comprometido ni enviado.
+- La rama fue publicada con el commit `699e605bcbd37baa30c0ea267337e35857ad2101` (`etapa 2`).
 - Los cambios de etapa 2 hasta ahora son el plan y suites de pruebas; no se modificó código de producción.
 
 ## Seguimiento de fase 2.1
@@ -109,5 +109,5 @@ Estas funcionalidades requieren etapas y criterios propios; su existencia no deb
 - Fases 2.1, 2.2 y 2.3 validadas; fase 2.4 validada manualmente para `USER` e `INSTITUTION`.
 - Backend: `BUILD SUCCESSFUL`, 42 pruebas, 0 fallos, 0 errores y 0 omitidas.
 - Android: revisión manual de roles, transición `ACTIVE → RESOLVED` y actualización posterior confirmadas por la persona usuaria.
-- Estado Git al inicio de esta etapa: rama local `etapa2`, basada en `10e25e1`; el usuario no ha confirmado todavía commit ni push de esta etapa.
+- Estado Git: rama `etapa2` publicada en GitHub. Commit de cierre `699e605bcbd37baa30c0ea267337e35857ad2101` (`etapa 2`), basado en `10e25e17eb966ef01ecd8c786dc696de9b74164d`.
 
