@@ -23,24 +23,26 @@ Cambios incluidos:
 - Se agregaron pruebas para coordenadas parciales.
 - Se agregaron pruebas para coordenadas fuera de rango.
 - Se verificó que las solicitudes inválidas no guarden alertas ni historial.
-- Se agregó `ApiExceptionHandler` para devolver errores con formato JSON:
+Se agregó ApiExceptionHandler para devolver errores con un campo message en la respuesta JSON.
 
-{
+Pruebas ejecutadas
 
-"message": "Descripción del error"
-
-}
-
-## Pruebas ejecutadas
-
-Comando utilizado desde `backend`:
+Comando utilizado desde backend:
 
 
 .\gradlew.bat test
+
+
 Resultado:
 
-La suite completa del backend terminó correctamente.
 
+BUILD SUCCESSFUL in 17s
+
+
+5 actionable tasks: 1 executed, 4 up-to-date
+
+
+La suite completa del backend terminó correctamente.
 
 ## Cobertura verificada
 
