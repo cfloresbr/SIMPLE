@@ -13,10 +13,14 @@ import cl.simple.repo.AlertStatusHistoryRepository
 import cl.simple.repo.UserRepository
 import cl.simple.security.JwtService
 import cl.simple.security.SecurityConfig
+import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.any
 import org.mockito.Mockito.never
@@ -124,6 +128,117 @@ class AlertApiTest {
 
         verify(alerts, never()).save(any(Alert::class.java))
         verify(history, never()).save(any(AlertStatusHistory::class.java))
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user can create alert without coordinates`() {
+        stubAlertCreation()
+
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson("null", "null"))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.latitude").value(nullValue()))
+            .andExpect(jsonPath("$.longitude").value(nullValue()))
+
+        val savedCaptor = ArgumentCaptor.forClass(Alert::class.java)
+        verify(alerts).save(savedCaptor.capture())
+        assertNull(savedCaptor.value.latitude)
+        assertNull(savedCaptor.value.longitude)
+        verify(history).save(any(AlertStatusHistory::class.java))
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "-90.0, -180.0",
+        "-90.0, 180.0",
+        "90.0, -180.0",
+        "90.0, 180.0"
+    )
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user can create alert at inclusive coordinate boundaries`(
+        latitude: Double,
+        longitude: Double
+    ) {
+        stubAlertCreation()
+
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson(latitude.toString(), longitude.toString()))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.latitude").value(latitude))
+            .andExpect(jsonPath("$.longitude").value(longitude))
+
+        val savedCaptor = ArgumentCaptor.forClass(Alert::class.java)
+        verify(alerts).save(savedCaptor.capture())
+        assertEquals(latitude, savedCaptor.value.latitude)
+        assertEquals(longitude, savedCaptor.value.longitude)
+        verify(history).save(any(AlertStatusHistory::class.java))
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user cannot create alert with latitude only`() {
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson("-33.4", "null"))
+        ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Debes enviar latitud y longitud juntas"))
+
+        verify(alerts, never()).save(any(Alert::class.java))
+        verify(history, never()).save(any(AlertStatusHistory::class.java))
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user cannot create alert with longitude only`() {
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson("null", "-70.6"))
+        ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Debes enviar latitud y longitud juntas"))
+
+        verify(alerts, never()).save(any(Alert::class.java))
+        verify(history, never()).save(any(AlertStatusHistory::class.java))
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "-90.0001, 0.0",
+        "90.0001, 0.0",
+        "0.0, -180.0001",
+        "0.0, 180.0001"
+    )
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user cannot create alert outside coordinate boundaries`(
+        latitude: Double,
+        longitude: Double
+    ) {
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson(latitude.toString(), longitude.toString()))
+        ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Las coordenadas no son válidas"))
+
+        verify(alerts, never()).save(any(Alert::class.java))
+        verify(history, never()).save(any(AlertStatusHistory::class.java))
+    }
+
+    private fun alertRequestJson(latitude: String, longitude: String) =
+        """{"type":"INCENDIO","level":"PREVENTIVA","message":"Reporte de prueba","latitude":$latitude,"longitude":$longitude}"""
+
+    private fun stubAlertCreation() {
+        `when`(alerts.save(any(Alert::class.java))).thenAnswer { invocation ->
+            invocation.getArgument<Alert>(0).apply { id = 42L }
+        }
+        `when`(history.save(any(AlertStatusHistory::class.java)))
+            .thenAnswer { invocation -> invocation.getArgument<AlertStatusHistory>(0) }
     }
 
     private fun alert(status: AlertStatus) = Alert(
