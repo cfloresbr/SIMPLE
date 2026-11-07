@@ -56,6 +56,13 @@ Criterio de cierre: la app no se cierra; muestra un mensaje claro en español, t
 - No se cambiará la versión de Gradle/AndroidX sin reproducir un problema que lo requiera.
 - La validación manual con MySQL debe preservar el respaldo vigente y usar datos reconocibles como prueba.
 
+## Revisión de cobertura antes de implementar
+
+- La rama base contiene tres suites backend: `AlertApiTest`, `AlertTransitionMatrixTest` y `JwtSecurityTest`. No aparecen suites Android bajo rutas `src/test`.
+- `AlertApiTest` cubre permisos, aprobación y rechazo de transiciones, pero no contiene casos para coordenadas. Por eso la fase 3.1 agrega cobertura nueva.
+- `AlertController.kt` permite ambas coordenadas nulas, rechaza coordenadas parciales con `400` y acepta los extremos inclusivos `-90/90` para latitud y `-180/180` para longitud.
+- `SimpleViewModel` captura fallos con `runCatching` y presenta `Throwable.message` como error; `refreshDashboard()` dispara en paralelo la carga de alertas y resumen. Estos comportamientos se deben probar para evaluar claridad del mensaje, estado de carga y errores concurrentes; no se presuponen defectos hasta observar resultados.
+
 ## Checkpoint inicial
 
 - Rama base publicada: `etapa2`, commit `98b3fff2010e529a46169238f14ded5089ca5c64`.
