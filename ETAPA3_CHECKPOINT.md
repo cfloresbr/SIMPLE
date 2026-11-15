@@ -109,7 +109,22 @@ Implementación Android iniciada en `etapa3`, sobre `HEAD` `0a18b1a278ff725e37de
 
 ### Pendientes vigentes de etapa 3.2
 
-- Validar respuestas `400`, `401`, `403` y `5xx`, timeout y fallo parcial del refresco cuando exista una forma segura y reproducible de provocarlos.
-- Verificar el estado del formulario ante fallo de envío sin crear registros en una base compartida; usar base aislada para pruebas que escriban.
-- Revisar el diff final y preparar el commit solo con documentación/código de etapa 3.2, excluyendo los tres logs de JVM.
-- Después, ejecutar la regresión de etapa 3.3 y completar evidencia por rol antes de cerrar la etapa.
+- Las pruebas manuales de errores descritas en la actualización del 15 de noviembre se completaron. La implementación de etapa 3.2 está en el commit `4d11110` de `etapa3`.
+- Pendiente vigente: ejecutar y registrar la regresión de etapa 3.3, incluyendo compilación/backend, comprobaciones por rol y evidencia reproducible.
+
+### Actualización del checkpoint — 15 de noviembre de 2026
+
+- `400`: una descripción de 1001 caracteres fue rechazada; la app mostró el mensaje de longitud máxima y mantuvo abierto el formulario. La validación del backend ocurre antes de guardar la alerta.
+- `401`: una contraseña incorrecta mostró credenciales inválidas; el inicio de sesión correcto posterior funcionó.
+- `403`: el rol `USER` intentó enviar `MAREJADAS`; apareció el error de permiso, el formulario quedó abierto y el contador no cambió. No se creó la alerta.
+- `500` y fallo parcial: con `SimpleApiMockServer.java`, fuera del repositorio y sin conexión a MySQL, el endpoint de alertas devolvió una alerta identificada como simulada y el resumen devolvió `500`. La app mantuvo la sección de alertas y mostró el error del servicio para el resumen.
+- Timeout: el mock demoró la respuesta de alertas más que el timeout de lectura; la app mostró que la conexión tardó demasiado.
+- Recuperación del mock: al volver el mock al modo normal y reintentar, la persona usuaria confirmó que todo funcionó correctamente.
+- El mock se compiló con JDK 21. El código fuente auxiliar está en el workspace de Codex, fuera de `SIMPLE`; no se incluye en commits del proyecto.
+- No se usaron acciones de gestión sobre la alerta simulada y el mock no consulta ni modifica MySQL.
+- Resultado de etapa 3.2: escenarios manuales de desconexión, `400`, `401`, `403`, `500` parcial, timeout y reintento: **validados por la persona usuaria**. La captura/evidencia de dispositivo y versión no se adjuntó.
+
+### Siguiente checkpoint
+
+- Iniciar fase 3.3 de regresión; registrar comandos, resultados, roles y datos de dispositivo/emulador.
+- Mantener los registros `android/hs_err_pid26640.log`, `backend/hs_err_pid24904.log` y `backend/replay_pid24904.log` fuera de Git.

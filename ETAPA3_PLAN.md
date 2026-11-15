@@ -2,7 +2,7 @@
 
 ## Estado
 
-La rama `etapa3` fue creada desde `98b3fff` (`corrección etapa 2`). La fase 3.1 está completada y documentada en `ETAPA3_CHECKPOINT.md`. La fase 3.2 está en desarrollo local, sin commit: Android compiló según el resultado reportado por la persona usuaria y la prueba manual de backend detenido/reintento tras recuperarlo pasó. Siguen pendientes timeout, respuestas `400`, `401`, `403`, `5xx`, fallo parcial de refresco y validación segura del formulario. La etapa todavía no está cerrada.
+La rama `etapa3` fue creada desde `98b3fff` (`corrección etapa 2`). La fase 3.1 está completada y documentada en `ETAPA3_CHECKPOINT.md`. La implementación de fase 3.2 está en el commit `4d11110` y sus escenarios manuales de conectividad, `400`, `401`, `403`, `500` parcial, timeout y reintento quedaron validados por la persona usuaria. La fase 3.2 está completa; la etapa 3 permanece abierta hasta ejecutar la regresión de fase 3.3.
 
 ## Objetivo
 
@@ -73,4 +73,4 @@ Después de estabilizar el flujo principal de etapa 3, revisar si acciones concu
 - Rama de trabajo: `etapa3`.
 - Código de producción aún sin cambios en esta etapa.
 - Fase 3.1 completada y publicada en `etapa3`; la cobertura backend registra 15 casos de `AlertApiTest`, 30 de `AlertTransitionMatrixTest` y 8 de `JwtSecurityTest`.
-- Siguiente paso vigente: revisar y preparar el commit de los archivos de código/documentación de fase 3.2, excluyendo los logs `hs_err`/`replay`; después completar los escenarios pendientes de fase 3.2 y ejecutar la regresión de fase 3.3.
+- Siguiente paso vigente: ejecutar la regresión de fase 3.3 y completar su evidencia por rol. Registrar y publicar este checkpoint actualizado por separado, manteniendo fuera de Git los logs `hs_err`/`replay`.
