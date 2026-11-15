@@ -73,3 +73,43 @@ La suite completa del backend terminó correctamente.
 Los avisos de Mockito, Java y Gradle no provocaron fallos en la suite.
 
 La validación de esta fase fue realizada con pruebas de backend y Mockito. La prueba manual desde Android y la comprobación directa de MySQL quedan pendientes.
+
+## Seguimiento de fase 3.2
+
+### Estado al 11 de noviembre de 2026
+
+Implementación Android iniciada en `etapa3`, sobre `HEAD` `0a18b1a278ff725e37de4277e340a42152ecaf2b`. La fase permanece abierta y no se ha creado commit para estos cambios.
+
+### Cambios locales en desarrollo
+
+- `MainActivity.kt`: separa los errores y estados de carga de alertas, resumen, historial y envío. Una respuesta exitosa ya no borra el error de otra consulta del panel. Los errores de refresco conservan los datos previamente cargados y ofrecen reintento.
+- `ApiErrors.kt`: traduce timeouts, falta de conexión y respuestas HTTP comunes a mensajes en español; si el backend entrega `message`, la app puede mostrarlo sin exponer mensajes internos de excepciones desconocidas.
+- `Api.kt`: fija límites de conexión, lectura, escritura y duración total de la solicitud.
+- El formulario de reporte conserva los datos y permanece abierto cuando falla el envío para que se pueda reintentar.
+
+### Validación y pendientes
+
+- `git diff --check`: sin errores de espacios en el diff.
+- No se añadieron ni ejecutaron pruebas en esta iteración.
+- En esta sesión, los intentos de compilación quedaron sin salida y se cancelaron. Después, la persona usuaria ejecutó desde `android` `.\gradlew.bat :app:assembleDebug --offline --no-daemon --max-workers=1 --console=plain`: `BUILD SUCCESSFUL` en 51 s; 37 tareas (11 ejecutadas, 26 al día). El comando probó el código local de etapa 3.2 sobre `HEAD` `0a18b1a278ff725e37de4277e340a42152ecaf2b`. Evidencia informada por la persona usuaria; no equivale a ejecutar las pruebas automatizadas.
+- La desconexión y recuperación manual del backend se validó el 14 de noviembre de 2026; los demás casos pendientes de fase 3.2 están detallados en la actualización al final de este documento.
+- El log `android/hs_err_pid26640.log` ya estaba presente antes de esta implementación y sigue sin rastrear; no incluirlo en un commit.
+- Riesgo diferido: una acción podría afectar alertas o historiales ajenos a la alerta objetivo. No se ha investigado ni modificado; se revisará tras estabilizar el flujo principal. Si una prueba actual muestra cambios fuera del alcance esperado, detener escrituras, preservar IDs/logs/respaldo y registrar el incidente antes de reintentar.
+
+### Actualización del checkpoint — 14 de noviembre de 2026
+
+- La persona usuaria confirmó la prueba manual de backend inaccesible: con SIMPLE abierta y el backend realmente detenido, la aplicación conservó las alertas visibles y presentó un mensaje de conexión fallida con opciones para reintentar la carga de alertas y el resumen.
+- Tras iniciar el backend una sola vez, la persona usuaria confirmó que ambos reintentos recuperaron la conexión y que los datos y mensajes quedaron correctos.
+- Se identificó una instancia anterior del backend (PID `5028`) que seguía activa durante un primer intento de inicio de sesión sin backend. Un segundo `bootRun` falló por puerto `8080` ocupado; no se considera una prueba de desconexión. Al detener la instancia anterior, la app mostró el estado de desconexión esperado.
+- El backend arrancó con MySQL después de reiniciar Windows y limitar la memoria de Gradle. Los intentos previos habían generado un fallo de memoria nativa de Java.
+- Durante la prueba de desconexión/recuperación no se usaron acciones para crear, aprobar, rechazar o resolver alertas; no se buscó modificar registros de alertas.
+- Resultado: conectividad caída, conservación visual de datos, mensaje recuperable y recuperación mediante reintento: **validado manualmente por la persona usuaria**. No equivale a la validación de timeout, `400`, `401`, `403`, `5xx` o fallo parcial de una consulta.
+- `git status` mostró todos los cambios de etapa 3.2 sin preparar en `etapa3`; aún no hay commit para ellos. `git diff --check` no encontró errores de espacios. Git avisó que normalizará LF a CRLF al tocar dos archivos Kotlin.
+- Logs de diagnóstico sin seguimiento: `android/hs_err_pid26640.log`, `backend/hs_err_pid24904.log` y `backend/replay_pid24904.log`. Conservarlos para referencia y excluirlos del commit.
+
+### Pendientes vigentes de etapa 3.2
+
+- Validar respuestas `400`, `401`, `403` y `5xx`, timeout y fallo parcial del refresco cuando exista una forma segura y reproducible de provocarlos.
+- Verificar el estado del formulario ante fallo de envío sin crear registros en una base compartida; usar base aislada para pruebas que escriban.
+- Revisar el diff final y preparar el commit solo con documentación/código de etapa 3.2, excluyendo los tres logs de JVM.
+- Después, ejecutar la regresión de etapa 3.3 y completar evidencia por rol antes de cerrar la etapa.

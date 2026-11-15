@@ -3,6 +3,8 @@ package cl.simple.app.data
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val name: String, val email: String, val password: String, val age: Int?, val disability: String?, val education: String?)
@@ -92,8 +94,16 @@ interface SimpleApi {
 object ApiClient {
     // Emulator -> host machine. For a physical phone replace with the PC's LAN IP.
     private const val BASE_URL = "http://10.0.2.2:8080/"
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .callTimeout(30, TimeUnit.SECONDS)
+        .build()
+
     val api: SimpleApi = Retrofit.Builder()
         .baseUrl(BASE_URL)
+        .client(httpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(SimpleApi::class.java)

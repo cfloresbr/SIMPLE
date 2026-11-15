@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.simple.app.data.*
+import java.util.concurrent.CancellationException
 import kotlinx.coroutines.launch
 
 
@@ -23,23 +24,41 @@ class SimpleViewModel : ViewModel() {
     var history by mutableStateOf<List<AlertHistoryDto>>(emptyList())
     var summary by mutableStateOf<ReportSummaryDto?>(null)
     var error by mutableStateOf<String?>(null)
+    var alertsError by mutableStateOf<String?>(null)
+    var summaryError by mutableStateOf<String?>(null)
+    var historyError by mutableStateOf<String?>(null)
+    var createError by mutableStateOf<String?>(null)
     var loading by mutableStateOf(false)
+    var alertsLoading by mutableStateOf(false)
+    var summaryLoading by mutableStateOf(false)
+    var historyLoading by mutableStateOf(false)
+
+    val dashboardLoading: Boolean
+        get() = alertsLoading || summaryLoading
+
+    val isBusy: Boolean
+        get() = loading || dashboardLoading || historyLoading
 
     fun login(email: String, password: String) = viewModelScope.launch {
         loading = true
         error = null
 
-        runCatching {
-            ApiClient.api.login(LoginRequest(email, password))
-        }.onSuccess {
-            token = it.token
-            user = it.user
-            refreshDashboard()
-        }.onFailure {
-            error = it.message ?: "No fue posible iniciar sesión"
+        try {
+            safeApiCall {
+                ApiClient.api.login(LoginRequest(email, password))
+            }.onSuccess {
+                token = it.token
+                user = it.user
+                refreshDashboard()
+            }.onFailure {
+                error = it.toSimpleMessage(
+                    fallback = "No fue posible iniciar sesión.",
+                    unauthorizedMessage = "El correo o la contraseña no son correctos."
+                )
+            }
+        } finally {
+            loading = false
         }
-
-        loading = false
     }
 
     fun register(name: String, email: String, password: String) =
@@ -47,48 +66,66 @@ class SimpleViewModel : ViewModel() {
             loading = true
             error = null
 
-            runCatching {
-                ApiClient.api.register(
-                    RegisterRequest(name, email, password, null, null, null)
-                )
-            }.onSuccess {
-                token = it.token
-                user = it.user
-                refreshDashboard()
-            }.onFailure {
-                error = it.message ?: "No fue posible registrar la cuenta"
+            try {
+                safeApiCall {
+                    ApiClient.api.register(
+                        RegisterRequest(name, email, password, null, null, null)
+                    )
+                }.onSuccess {
+                    token = it.token
+                    user = it.user
+                    refreshDashboard()
+                }.onFailure {
+                    error = it.toSimpleMessage("No fue posible registrar la cuenta.")
+                }
+            } finally {
+                loading = false
             }
-
-            loading = false
         }
 
     fun loadAlerts() = viewModelScope.launch {
         val currentToken = token ?: return@launch
+        if (alertsLoading) return@launch
+        alertsLoading = true
 
-        runCatching {
-            ApiClient.api.alerts("Bearer $currentToken")
-        }.onSuccess {
-            alerts = it
-            error = null
-        }.onFailure {
-            error = it.message ?: "No fue posible cargar las alertas"
+        try {
+            safeApiCall {
+                ApiClient.api.alerts("Bearer $currentToken")
+            }.onSuccess {
+                alerts = it
+                alertsError = null
+            }.onFailure {
+                alertsError = it.toSimpleMessage("No fue posible cargar las alertas.")
+            }
+        } finally {
+            alertsLoading = false
         }
     }
 
     fun loadSummary() = viewModelScope.launch {
         val currentToken = token ?: return@launch
+        if (summaryLoading) return@launch
         val role = user?.role?.uppercase()
         if (role != "INSTITUTION" && role != "ADMIN") {
             summary = null
+            summaryError = null
             return@launch
         }
+        summaryLoading = true
 
-        runCatching {
-            ApiClient.api.summary("Bearer $currentToken")
-        }.onSuccess {
-            summary = it
-        }.onFailure {
-            error = it.message ?: "No fue posible cargar el resumen institucional"
+        try {
+            safeApiCall {
+                ApiClient.api.summary("Bearer $currentToken")
+            }.onSuccess {
+                summary = it
+                summaryError = null
+            }.onFailure {
+                summaryError = it.toSimpleMessage(
+                    "No fue posible cargar el resumen institucional."
+                )
+            }
+        } finally {
+            summaryLoading = false
         }
     }
 
@@ -97,25 +134,33 @@ class SimpleViewModel : ViewModel() {
         loadSummary()
     }
 
-    fun createAlert(type: String, level: String, message: String) =
+    fun createAlert(
+        type: String,
+        level: String,
+        message: String,
+        onSuccess: () -> Unit
+    ) =
         viewModelScope.launch {
             val currentToken = token ?: return@launch
 
             loading = true
-            error = null
+            createError = null
 
-            runCatching {
-                ApiClient.api.createAlert(
-                    "Bearer $currentToken",
-                    AlertRequest(type, level, message, null, null)
-                )
-            }.onSuccess {
-                refreshDashboard()
-            }.onFailure {
-                error = it.message ?: "No fue posible crear el reporte"
+            try {
+                safeApiCall {
+                    ApiClient.api.createAlert(
+                        "Bearer $currentToken",
+                        AlertRequest(type, level, message, null, null)
+                    )
+                }.onSuccess {
+                    onSuccess()
+                    refreshDashboard()
+                }.onFailure {
+                    createError = it.toSimpleMessage("No fue posible crear el reporte.")
+                }
+            } finally {
+                loading = false
             }
-
-            loading = false
         }
 
     private fun runAlertAction(
@@ -131,19 +176,21 @@ class SimpleViewModel : ViewModel() {
         loading = true
         error = null
 
-        runCatching {
-            action(
-                "Bearer $currentToken",
-                id,
-                AlertActionRequest()
-            )
-        }.onSuccess {
-            refreshDashboard()
-        }.onFailure {
-            error = it.message ?: "No fue posible actualizar la alerta"
+        try {
+            safeApiCall {
+                action(
+                    "Bearer $currentToken",
+                    id,
+                    AlertActionRequest()
+                )
+            }.onSuccess {
+                refreshDashboard()
+            }.onFailure {
+                error = it.toSimpleMessage("No fue posible actualizar la alerta.")
+            }
+        } finally {
+            loading = false
         }
-
-        loading = false
     }
 
     fun approveAlert(id: Long) {
@@ -172,15 +219,28 @@ class SimpleViewModel : ViewModel() {
 
     fun loadAlertHistory(id: Long) = viewModelScope.launch {
         val currentToken = token ?: return@launch
+        historyLoading = true
 
-        runCatching {
-            ApiClient.api.alertHistory("Bearer $currentToken", id)
-        }.onSuccess {
-            history = it
-            error = null
-        }.onFailure {
-            error = it.message ?: "No fue posible consultar el historial"
+        try {
+            safeApiCall {
+                ApiClient.api.alertHistory("Bearer $currentToken", id)
+            }.onSuccess {
+                history = it
+                historyError = null
+            }.onFailure {
+                historyError = it.toSimpleMessage("No fue posible consultar el historial.")
+            }
+        } finally {
+            historyLoading = false
         }
+    }
+
+    private suspend fun <T> safeApiCall(request: suspend () -> T): Result<T> = try {
+        Result.success(request())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failure: Exception) {
+        Result.failure(failure)
     }
 
     fun logout() {
@@ -190,6 +250,10 @@ class SimpleViewModel : ViewModel() {
         history = emptyList()
         summary = null
         error = null
+        createError = null
+        alertsError = null
+        summaryError = null
+        historyError = null
     }
 }
 
@@ -231,6 +295,7 @@ fun LoginScreen(vm: SimpleViewModel) {
 fun HomeScreen(vm: SimpleViewModel) {
     var showCreate by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
+    var selectedHistoryAlertId by remember { mutableStateOf<Long?>(null) }
 
     var type by remember { mutableStateOf("Incendio") }
     var level by remember { mutableStateOf("Preventiva") }
@@ -244,7 +309,10 @@ fun HomeScreen(vm: SimpleViewModel) {
             TopAppBar(
                 title = { Text("SIMPLE") },
                 actions = {
-                    TextButton(onClick = vm::refreshDashboard) {
+                    TextButton(
+                        onClick = vm::refreshDashboard,
+                        enabled = !vm.dashboardLoading
+                    ) {
                         Text("Actualizar")
                     }
                     TextButton(onClick = vm::logout) {
@@ -255,7 +323,10 @@ fun HomeScreen(vm: SimpleViewModel) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showCreate = true }
+                onClick = {
+                    vm.createError = null
+                    showCreate = true
+                }
             ) {
                 Text("+")
             }
@@ -292,7 +363,7 @@ fun HomeScreen(vm: SimpleViewModel) {
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                if (vm.loading) {
+                if (vm.isBusy) {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -305,9 +376,42 @@ fun HomeScreen(vm: SimpleViewModel) {
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+
+                vm.alertsError?.let { alertsError ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(alertsError, color = MaterialTheme.colorScheme.error)
+                    TextButton(
+                        onClick = { vm.loadAlerts() },
+                        enabled = !vm.alertsLoading
+                    ) {
+                        Text("Reintentar carga de alertas")
+                    }
+                }
             }
 
             if (canManageAlerts) {
+                vm.summaryError?.let { summaryError ->
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    summaryError,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                TextButton(
+                                    onClick = { vm.loadSummary() },
+                                    enabled = !vm.summaryLoading
+                                ) {
+                                    Text("Reintentar resumen")
+                                }
+                            }
+                        }
+                    }
+                }
+
                 vm.summary?.let { report ->
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
@@ -391,14 +495,14 @@ fun HomeScreen(vm: SimpleViewModel) {
                                 "PENDING" -> {
                                     TextButton(
                                         onClick = { vm.approveAlert(alert.id) },
-                                        enabled = !vm.loading
+                                        enabled = !vm.isBusy
                                     ) {
                                         Text("Aprobar alerta")
                                     }
 
                                     TextButton(
                                         onClick = { vm.rejectAlert(alert.id) },
-                                        enabled = !vm.loading
+                                        enabled = !vm.isBusy
                                     ) {
                                         Text("Rechazar alerta")
                                     }
@@ -407,14 +511,14 @@ fun HomeScreen(vm: SimpleViewModel) {
                                 "VALIDATED" -> {
                                     TextButton(
                                         onClick = { vm.activateAlert(alert.id) },
-                                        enabled = !vm.loading
+                                        enabled = !vm.isBusy
                                     ) {
                                         Text("Activar alerta")
                                     }
 
                                     TextButton(
                                         onClick = { vm.rejectAlert(alert.id) },
-                                        enabled = !vm.loading
+                                        enabled = !vm.isBusy
                                     ) {
                                         Text("Rechazar alerta")
                                     }
@@ -423,7 +527,7 @@ fun HomeScreen(vm: SimpleViewModel) {
                                 "ACTIVE" -> {
                                     TextButton(
                                         onClick = { vm.resolveAlert(alert.id) },
-                                        enabled = !vm.loading
+                                        enabled = !vm.isBusy
                                     ) {
                                         Text("Marcar como resuelta")
                                     }
@@ -445,10 +549,12 @@ fun HomeScreen(vm: SimpleViewModel) {
                             TextButton(
                                 onClick = {
                                     vm.history = emptyList()
+                                    vm.historyError = null
+                                    selectedHistoryAlertId = alert.id
                                     showHistory = true
                                     vm.loadAlertHistory(alert.id)
                                 },
-                                enabled = !vm.loading
+                                enabled = !vm.isBusy
                             ) {
                                 Text("Consultar historial")
                             }
@@ -471,6 +577,13 @@ fun HomeScreen(vm: SimpleViewModel) {
                     Text(
                         "Describe la emergencia para que pueda ser revisada."
                     )
+
+                    vm.createError?.let { createError ->
+                        Text(
+                            createError,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
 
                     OutlinedTextField(
                         value = type,
@@ -505,9 +618,10 @@ fun HomeScreen(vm: SimpleViewModel) {
                                 type.trim(),
                                 level.trim(),
                                 message.trim()
-                            )
-                            showCreate = false
-                            message = ""
+                            ) {
+                                showCreate = false
+                                message = ""
+                            }
                         }
                     },
                     enabled = !vm.loading &&
@@ -515,7 +629,7 @@ fun HomeScreen(vm: SimpleViewModel) {
                             level.isNotBlank() &&
                             message.isNotBlank()
                 ) {
-                    Text("Enviar reporte")
+                    Text(if (vm.createError == null) "Enviar reporte" else "Reintentar envío")
                 }
             },
             dismissButton = {
@@ -533,33 +647,53 @@ fun HomeScreen(vm: SimpleViewModel) {
             onDismissRequest = { showHistory = false },
             title = { Text("Historial de la alerta") },
             text = {
-                if (vm.history.isEmpty()) {
-                    Text(
-                        "No hay registros para mostrar o el historial todavía no se ha cargado."
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 350.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(vm.history) { entry ->
-                            Column(
-                                verticalArrangement =
-                                    Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "${entry.previousStatus ?: "Sin estado previo"} → ${entry.newStatus}",
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-
-                                Text("Responsable: ${entry.changedBy}")
-                                Text("Fecha: ${entry.changedAt}")
-
-                                if (entry.comment.isNotBlank()) {
-                                    Text("Comentario: ${entry.comment}")
+                when {
+                    vm.historyLoading -> CircularProgressIndicator()
+                    vm.historyError != null -> Column {
+                        Text(
+                            vm.historyError!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        TextButton(
+                            onClick = {
+                                selectedHistoryAlertId?.let { alertId ->
+                                    vm.loadAlertHistory(alertId)
                                 }
+                            },
+                            enabled = !vm.historyLoading
+                        ) {
+                            Text("Reintentar")
+                        }
+                    }
+                    vm.history.isEmpty() -> {
+                        Text(
+                            "No hay registros en el historial de esta alerta."
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 350.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(vm.history) { entry ->
+                                Column(
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "${entry.previousStatus ?: "Sin estado previo"} → ${entry.newStatus}",
+                                        style = MaterialTheme.typography.titleSmall
+                                    )
 
-                                HorizontalDivider()
+                                    Text("Responsable: ${entry.changedBy}")
+                                    Text("Fecha: ${entry.changedAt}")
+
+                                    if (entry.comment.isNotBlank()) {
+                                        Text("Comentario: ${entry.comment}")
+                                    }
+
+                                    HorizontalDivider()
+                                }
                             }
                         }
                     }

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Rama `etapa3`, creada desde `98b3fff` (`corrección etapa 2`). Este plan fija el alcance inicial; no incluye todavía cambios al código de Android o backend.
+La rama `etapa3` fue creada desde `98b3fff` (`corrección etapa 2`). La fase 3.1 está completada y documentada en `ETAPA3_CHECKPOINT.md`. La fase 3.2 está en desarrollo local, sin commit: Android compiló según el resultado reportado por la persona usuaria y la prueba manual de backend detenido/reintento tras recuperarlo pasó. Siguen pendientes timeout, respuestas `400`, `401`, `403`, `5xx`, fallo parcial de refresco y validación segura del formulario. La etapa todavía no está cerrada.
 
 ## Objetivo
 
@@ -56,6 +56,10 @@ Criterio de cierre: la app no se cierra; muestra un mensaje claro en español, t
 - No se cambiará la versión de Gradle/AndroidX sin reproducir un problema que lo requiera.
 - La validación manual con MySQL debe preservar el respaldo vigente y usar datos reconocibles como prueba.
 
+## Riesgo diferido de integridad entre alertas
+
+Después de estabilizar el flujo principal de etapa 3, revisar si acciones concurrentes, reintentos o relaciones de datos pueden afectar alertas o historiales ajenos al ID solicitado. No se abordará en la fase 3.2 salvo que una prueba del flujo actual revele una modificación inesperada. Al retomarlo, usar base aislada, IDs de prueba explícitos, respaldo verificado y comparación de conteos/IDs antes y después. La revisión posterior deberá definir criterios de atomicidad, repetición segura y concurrencia antes de introducir complejidad en la arquitectura.
+
 ## Revisión de cobertura antes de implementar
 
 - La rama base contiene tres suites backend: `AlertApiTest`, `AlertTransitionMatrixTest` y `JwtSecurityTest`. No aparecen suites Android bajo rutas `src/test`.
@@ -68,4 +72,5 @@ Criterio de cierre: la app no se cierra; muestra un mensaje claro en español, t
 - Rama base publicada: `etapa2`, commit `98b3fff2010e529a46169238f14ded5089ca5c64`.
 - Rama de trabajo: `etapa3`.
 - Código de producción aún sin cambios en esta etapa.
-- Siguiente paso: revisar los tests existentes de backend/Android y preparar la matriz de casos de la fase 3.1 antes de implementar.
+- Fase 3.1 completada y publicada en `etapa3`; la cobertura backend registra 15 casos de `AlertApiTest`, 30 de `AlertTransitionMatrixTest` y 8 de `JwtSecurityTest`.
+- Siguiente paso vigente: revisar y preparar el commit de los archivos de código/documentación de fase 3.2, excluyendo los logs `hs_err`/`replay`; después completar los escenarios pendientes de fase 3.2 y ejecutar la regresión de fase 3.3.
