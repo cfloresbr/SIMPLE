@@ -126,5 +126,14 @@ Implementación Android iniciada en `etapa3`, sobre `HEAD` `0a18b1a278ff725e37de
 
 ### Siguiente checkpoint
 
-- Iniciar fase 3.3 de regresión; registrar comandos, resultados, roles y datos de dispositivo/emulador.
 - Mantener los registros `android/hs_err_pid26640.log`, `backend/hs_err_pid24904.log` y `backend/replay_pid24904.log` fuera de Git.
+
+### Actualización del checkpoint — regresión 3.3 — 15 de noviembre de 2026
+
+- Backend: desde `backend` se ejecutó `.\gradlew.bat test --offline --no-daemon --max-workers=1 --console=plain --rerun-tasks` con límites de memoria de Gradle. Resultado: `BUILD SUCCESSFUL` en 1m16s; 5 tareas ejecutadas.
+- Reportes XML: 3 suites, 53 tests, 0 fallos, 0 errores y 0 omitidos. Desglose: `AlertApiTest` 15, `AlertTransitionMatrixTest` 30 y `JwtSecurityTest` 8. Las pruebas usan `@WebMvcTest` y repositorios simulados; no acceden a MySQL.
+- Android: desde `android` se ejecutó `.\gradlew.bat :app:assembleDebug --offline --no-daemon --max-workers=1 --console=plain`; terminó con `BUILD SUCCESSFUL`, 37 tareas `UP-TO-DATE`. El código Android ya había compilado efectivamente tras los cambios de fase 3.2 y no hubo cambios de código después de ese build.
+- Rol `INSTITUTION` con backend real: la persona usuaria informó que la carga de alertas y el resumen institucional funcionaron correctamente. El flujo de desconexión/recuperación con rol `USER` y la prueba institucional del mock constan en las actualizaciones anteriores.
+- Pruebas de `400`, `401`, `403`, `500` parcial, timeout y reintento completadas manualmente según los resultados informados por la persona usuaria. El `500`/timeout se provocó con el mock local fuera del repositorio; el mock no accedió a MySQL. No se usaron botones de gestión en la alerta simulada.
+- Resultado: regresión funcional de etapas 3.2 y 3.3: **aprobada** según las pruebas disponibles. No se informó el modelo/API level exacto del emulador; la evidencia se registró como prueba en Android Emulator reportada por la persona usuaria.
+- Pendiente administrativo: commit/push de esta actualización del checkpoint y plan. Los tres logs de JVM permanecen excluidos.

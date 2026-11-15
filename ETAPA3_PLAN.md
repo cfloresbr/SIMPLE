@@ -2,7 +2,7 @@
 
 ## Estado
 
-La rama `etapa3` fue creada desde `98b3fff` (`corrección etapa 2`). La fase 3.1 está completada y documentada en `ETAPA3_CHECKPOINT.md`. La implementación de fase 3.2 está en el commit `4d11110` y sus escenarios manuales de conectividad, `400`, `401`, `403`, `500` parcial, timeout y reintento quedaron validados por la persona usuaria. La fase 3.2 está completa; la etapa 3 permanece abierta hasta ejecutar la regresión de fase 3.3.
+La rama `etapa3` fue creada desde `98b3fff` (`corrección etapa 2`). La fase 3.1 está completada y documentada en `ETAPA3_CHECKPOINT.md`. La fase 3.2 está en el commit `4d11110`; sus escenarios manuales de conectividad, `400`, `401`, `403`, `500` parcial, timeout y reintento fueron validados por la persona usuaria. La regresión de fase 3.3 se completó el 15 de noviembre de 2026: 53 tests backend pasaron (0 fallos) y la compilación Android terminó correctamente. La evidencia detallada está en `ETAPA3_CHECKPOINT.md`; el cierre de etapa queda pendiente de commitear/publicar esta actualización documental.
 
 ## Objetivo
 
@@ -73,4 +73,4 @@ Después de estabilizar el flujo principal de etapa 3, revisar si acciones concu
 - Rama de trabajo: `etapa3`.
 - Código de producción aún sin cambios en esta etapa.
 - Fase 3.1 completada y publicada en `etapa3`; la cobertura backend registra 15 casos de `AlertApiTest`, 30 de `AlertTransitionMatrixTest` y 8 de `JwtSecurityTest`.
-- Siguiente paso vigente: ejecutar la regresión de fase 3.3 y completar su evidencia por rol. Registrar y publicar este checkpoint actualizado por separado, manteniendo fuera de Git los logs `hs_err`/`replay`.
+- Siguiente paso vigente: revisar y commitear/publicar solo `ETAPA3_CHECKPOINT.md` y `ETAPA3_PLAN.md`, dejando fuera los tres logs de JVM. Después, cerrar etapa 3 y acordar el siguiente objetivo según la ruta del proyecto.
