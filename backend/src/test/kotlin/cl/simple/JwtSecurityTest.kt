@@ -66,12 +66,21 @@ class JwtSecurityTest {
         `when`(users.findByEmail(admin.email)).thenReturn(admin)
         `when`(alerts.findAll()).thenReturn(emptyList())
         `when`(alerts.findAllByOrderByCreatedAtDesc()).thenReturn(emptyList())
+        `when`(alerts.findAllByCreatedByOrderByCreatedAtDesc(user.id)).thenReturn(emptyList())
     }
 
     @Test
     fun `request without bearer token returns unauthorized`() {
         mvc.perform(get("/api/alerts"))
             .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `public alert feed is readable without signing in and reports no official connection`() {
+        mvc.perform(get("/api/alerts/public"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.state").value("NOT_CONNECTED"))
+            .andExpect(jsonPath("$.alerts.length()").value(0))
     }
 
     @Test
@@ -163,7 +172,7 @@ class JwtSecurityTest {
     private fun summaryAlert(id: Long, status: AlertStatus) = Alert(
         id = id,
         type = "INCENDIO",
-        level = AlertLevel.PREVENTIVA,
+        level = AlertLevel.PREVENTIVA.name,
         message = "Alerta de resumen $id",
         status = status,
         createdAt = LocalDateTime.parse("2026-11-02T10:00:00")

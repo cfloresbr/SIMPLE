@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 enum class Role { USER, INSTITUTION, ADMIN }
 enum class AlertStatus { PENDING, VALIDATED, ACTIVE, REJECTED, RESOLVED, EXPIRED }
-enum class AlertLevel { PREVENTIVA, AMARILLA, ROJA, INFORMATIVA }
+enum class AlertLevel { PREVENTIVA, AMARILLA, ROJA, INFORMATIVA, SIN_CLASIFICAR }
 
 @Entity
 @Table(name = "users")
@@ -27,7 +27,8 @@ class User(
 class Alert(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Long = 0,
     @Column(nullable = false, length = 100) var type: String = "",
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var level: AlertLevel = AlertLevel.INFORMATIVA,
+    // Stored as VARCHAR so new classification schemes can be added without an enum migration.
+    @Column(nullable = false, length = 30) var level: String = AlertLevel.SIN_CLASIFICAR.name,
     @Column(nullable = false, length = 1000) var message: String = "",
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var status: AlertStatus = AlertStatus.PENDING,
     var latitude: Double? = null,

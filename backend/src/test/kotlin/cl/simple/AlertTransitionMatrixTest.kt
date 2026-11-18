@@ -121,7 +121,7 @@ class AlertTransitionMatrixTest {
     private fun alert(status: AlertStatus) = Alert(
         id = ALERT_ID,
         type = "INCENDIO",
-        level = AlertLevel.PREVENTIVA,
+        level = AlertLevel.PREVENTIVA.name,
         message = "Alerta de prueba de transiciones",
         status = status,
         createdAt = LocalDateTime.parse("2026-11-02T10:00:00"),

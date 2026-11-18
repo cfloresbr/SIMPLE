@@ -91,6 +91,69 @@ class AlertApiTest {
     }
 
     @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user only receives their own reports`() {
+        val ownReport = alert(AlertStatus.ACTIVE).apply {
+            updatedBy = 12
+            updatedAt = LocalDateTime.parse("2026-11-02T10:10:00")
+            activatedAt = LocalDateTime.parse("2026-11-02T10:05:00")
+            expiresAt = LocalDateTime.parse("2026-11-02T11:00:00")
+        }
+        `when`(alerts.findAllByCreatedByOrderByCreatedAtDesc(7)).thenReturn(listOf(ownReport))
+
+        mvc.perform(get("/api/alerts"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value(41))
+            .andExpect(jsonPath("$[0].createdBy").value(nullValue()))
+            .andExpect(jsonPath("$[0].updatedBy").value(nullValue()))
+            .andExpect(jsonPath("$[0].activatedAt").value("2026-11-02T10:05"))
+            .andExpect(jsonPath("$[0].resolvedAt").value(nullValue()))
+            .andExpect(jsonPath("$[0].expiresAt").value("2026-11-02T11:00"))
+
+        verify(alerts).findAllByCreatedByOrderByCreatedAtDesc(7)
+        verify(alerts, never()).findAllByOrderByCreatedAtDesc()
+    }
+
+    @Test
+    @WithMockUser(username = "institution@example.test", roles = ["INSTITUTION"])
+    fun `internal moderator receives the complete internal inbox`() {
+        val reports = listOf(alert(AlertStatus.PENDING), alert(AlertStatus.PENDING).apply { id = 42 })
+        `when`(alerts.findAllByOrderByCreatedAtDesc()).thenReturn(reports)
+
+        mvc.perform(get("/api/alerts"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].createdBy").value(7))
+
+        verify(alerts).findAllByOrderByCreatedAtDesc()
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public feed does not expose internal reports before official integration`() {
+        mvc.perform(get("/api/alerts/public"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.state").value("NOT_CONNECTED"))
+            .andExpect(jsonPath("$.alerts.length()").value(0))
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user cannot read another report history`() {
+        val otherReport = alert(AlertStatus.PENDING).apply {
+            id = 42
+            createdBy = 12
+        }
+        `when`(alerts.findById(42)).thenReturn(Optional.of(otherReport))
+
+        mvc.perform(get("/api/alerts/42/history"))
+            .andExpect(status().isNotFound)
+
+        verify(history, never()).findAllByAlertIdOrderByChangedAtDesc(42)
+    }
+
+    @Test
     @WithMockUser(username = "institution@example.test", roles = ["INSTITUTION"])
     fun `institution approves pending alert and records history`() {
         val pending = alert(AlertStatus.PENDING)
@@ -142,11 +205,57 @@ class AlertApiTest {
         ).andExpect(status().isOk)
             .andExpect(jsonPath("$.latitude").value(nullValue()))
             .andExpect(jsonPath("$.longitude").value(nullValue()))
+            .andExpect(jsonPath("$.type").value("INCENDIO_FORESTAL"))
+            .andExpect(jsonPath("$.level").value("SIN_CLASIFICAR"))
 
         val savedCaptor = ArgumentCaptor.forClass(Alert::class.java)
         verify(alerts).save(savedCaptor.capture())
         assertNull(savedCaptor.value.latitude)
         assertNull(savedCaptor.value.longitude)
+        assertEquals(AlertStatus.PENDING, savedCaptor.value.status)
+        assertEquals(AlertLevel.SIN_CLASIFICAR.name, savedCaptor.value.level)
+        verify(history).save(any(AlertStatusHistory::class.java))
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.test", roles = ["USER"])
+    fun `public user can report structural fire without assigning a level`() {
+        stubAlertCreation()
+
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson("null", "null", type = "INCENDIO_ESTRUCTURAL", level = "AMARILLA"))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.type").value("INCENDIO_ESTRUCTURAL"))
+            .andExpect(jsonPath("$.level").value("SIN_CLASIFICAR"))
+            .andExpect(jsonPath("$.status").value("PENDING"))
+
+        val savedCaptor = ArgumentCaptor.forClass(Alert::class.java)
+        verify(alerts).save(savedCaptor.capture())
+        assertEquals("INCENDIO_ESTRUCTURAL", savedCaptor.value.type)
+        assertEquals(AlertLevel.SIN_CLASIFICAR.name, savedCaptor.value.level)
+        verify(history).save(any(AlertStatusHistory::class.java))
+    }
+
+    @Test
+    @WithMockUser(username = "institution@example.test", roles = ["INSTITUTION"])
+    fun `internal moderator cannot assign an official level when creating an alert`() {
+        stubAlertCreation()
+
+        mvc.perform(
+            post("/api/alerts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(alertRequestJson("null", "null", type = "MAREJADAS", level = "ROJA"))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.level").value("SIN_CLASIFICAR"))
+            .andExpect(jsonPath("$.status").value("PENDING"))
+
+        val savedCaptor = ArgumentCaptor.forClass(Alert::class.java)
+        verify(alerts).save(savedCaptor.capture())
+        assertEquals(12L, savedCaptor.value.createdBy)
+        assertEquals(AlertLevel.SIN_CLASIFICAR.name, savedCaptor.value.level)
+        assertEquals(AlertStatus.PENDING, savedCaptor.value.status)
         verify(history).save(any(AlertStatusHistory::class.java))
     }
 
@@ -230,8 +339,12 @@ class AlertApiTest {
         verify(history, never()).save(any(AlertStatusHistory::class.java))
     }
 
-    private fun alertRequestJson(latitude: String, longitude: String) =
-        """{"type":"INCENDIO","level":"PREVENTIVA","message":"Reporte de prueba","latitude":$latitude,"longitude":$longitude}"""
+    private fun alertRequestJson(
+        latitude: String,
+        longitude: String,
+        type: String = "INCENDIO_FORESTAL",
+        level: String = "ROJA"
+    ) = """{"type":"$type","level":"$level","message":"Reporte de prueba","latitude":$latitude,"longitude":$longitude}"""
 
     private fun stubAlertCreation() {
         `when`(alerts.save(any(Alert::class.java))).thenAnswer { invocation ->
@@ -244,7 +357,7 @@ class AlertApiTest {
     private fun alert(status: AlertStatus) = Alert(
         id = 41,
         type = "INCENDIO",
-        level = AlertLevel.PREVENTIVA,
+        level = AlertLevel.PREVENTIVA.name,
         message = "Reporte de prueba",
         status = status,
         createdAt = LocalDateTime.parse("2026-11-02T10:00:00"),

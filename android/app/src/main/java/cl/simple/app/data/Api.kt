@@ -10,8 +10,43 @@ data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(val name: String, val email: String, val password: String, val age: Int?, val disability: String?, val education: String?)
 data class AuthResponse(val token: String, val user: UserDto)
 data class UserDto(val id: Long, val name: String, val email: String, val role: String)
-data class AlertRequest(val type: String, val level: String, val message: String, val latitude: Double?, val longitude: Double?)
-data class AlertDto(val id: Long, val type: String, val level: String, val message: String, val status: String, val createdAt: String, val latitude: Double?, val longitude: Double?)
+data class AlertRequest(
+    val type: String,
+    val message: String,
+    val latitude: Double?,
+    val longitude: Double?
+)
+data class AlertDto(
+    val id: Long,
+    val type: String,
+    val level: String,
+    val message: String,
+    val status: String,
+    val createdAt: String,
+    val latitude: Double?,
+    val longitude: Double?,
+    val createdBy: Long? = null,
+    val updatedAt: String? = null,
+    val updatedBy: Long? = null,
+    val activatedAt: String? = null,
+    val resolvedAt: String? = null,
+    val expiresAt: String? = null
+)
+data class PublicAlertDto(
+    val id: Long,
+    val type: String,
+    val title: String,
+    val message: String,
+    val source: String,
+    val area: String,
+    val publishedAt: String,
+    val validUntil: String?
+)
+data class PublicAlertFeedDto(
+    val state: String,
+    val message: String,
+    val alerts: List<PublicAlertDto>
+)
 
 
 data class AlertActionRequest(
@@ -46,6 +81,9 @@ interface SimpleApi {
 
     @GET("api/alerts")
     suspend fun alerts(@Header("Authorization") token: String): List<AlertDto>
+
+    @GET("api/alerts/public")
+    suspend fun publicAlerts(): PublicAlertFeedDto
 
     @POST("api/alerts")
     suspend fun createAlert(@Header("Authorization") token: String, @Body body: AlertRequest): AlertDto

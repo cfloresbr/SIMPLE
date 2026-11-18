@@ -9,6 +9,7 @@ interface UserRepository : JpaRepository<User, Long> {
 
 interface AlertRepository : JpaRepository<Alert, Long> {
     fun findAllByOrderByCreatedAtDesc(): List<Alert>
+    fun findAllByCreatedByOrderByCreatedAtDesc(createdBy: Long): List<Alert>
 }
 
 interface AlertStatusHistoryRepository : JpaRepository<AlertStatusHistory, Long> {
